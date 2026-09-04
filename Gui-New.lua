@@ -1,5 +1,4 @@
 
-
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Players = game:GetService("Players")
@@ -279,24 +278,74 @@ function Library:NewWindow(title)
     Close.Parent = TitleBar
     Corner(Close,6)
 
-    local Mini = Instance.new("TextButton")
-    Mini.Size = UDim2.fromOffset(38,38)
-    Mini.Position = UDim2.fromOffset(18,18)
-    Mini.Text = "X"
-    Mini.TextColor3 = Color3.fromRGB(0,210,255)
-    Mini.Font = Enum.Font.GothamBold
-    Mini.TextSize = 16
-    Mini.BackgroundColor3 = Color3.fromRGB(20,22,30)
+    --==================================================
+    -- LOGO TOGGLE BUTTON (แทนปุ่ม W/X เดิม)
+    --==================================================
+    local Mini = Instance.new("ImageButton")
+    Mini.Name = "TogglePill"
+    Mini.BackgroundTransparency = 1
     Mini.BorderSizePixel = 0
+    Mini.ClipsDescendants = true
+    Mini.ZIndex = 10
+    Mini.AutoButtonColor = false
+    Mini.AnchorPoint = Vector2.new(0.5, 1)
+    Mini.Position = UDim2.new(0.1, 10, 0.25, 5)
+    Mini.Size = UDim2.fromOffset(54, 54)
+    Mini.Visible = true
+    Mini.ImageTransparency = 0.05
+    Mini.ScaleType = Enum.ScaleType.Crop
     Mini.Parent = Gui
-    Corner(Mini,19)
-    Stroke(Mini, Color3.fromRGB(0,210,255), 0.2)
+
+    local MiniCorner = Instance.new("UICorner")
+    MiniCorner.CornerRadius = UDim.new(0, 6)
+    MiniCorner.Parent = Mini
+
+    local MiniStroke = Instance.new("UIStroke")
+    MiniStroke.Color = Color3.fromRGB(0, 210, 255)
+    MiniStroke.Thickness = 2.5
+    MiniStroke.Parent = Mini
+
+    -- โหลดโลโก้จาก URL และ cache ไว้ในเครื่อง ถ้า executor รองรับ
+    task.spawn(function()
+        pcall(function()
+            local imageUrl = "https://i.postimg.cc/cJKhRc1r/IMG-20260904-201616-447.png"
+            local fileName = "RUNLUA.png"
+
+            if isfile and writefile and readfile and getcustomasset then
+                if not isfile(fileName) then
+                    local imgData = game:HttpGet(imageUrl)
+                    if imgData and #imgData > 0 then
+                        writefile(fileName, imgData)
+                    end
+                end
+
+                if isfile(fileName) then
+                    Mini.Image = getcustomasset(fileName)
+                else
+                    Mini.Image = imageUrl
+                end
+            else
+                Mini.Image = imageUrl
+            end
+        end)
+    end)
+
     MakeDraggable(Mini, Mini)
+
+    local function UpdateMiniStroke()
+        TweenService:Create(MiniStroke, TweenInfo.new(0.15), {
+            Color = Main.Visible
+                and Color3.fromRGB(0, 210, 255)
+                or Color3.fromRGB(200, 10, 40)
+        }):Play()
+    end
 
     Track(Mini.MouseButton1Click:Connect(function()
         Main.Visible = not Main.Visible
-        Mini.Text = Main.Visible and "X" or "W"
+        UpdateMiniStroke()
     end))
+
+    UpdateMiniStroke()
 
     local Sidebar = Instance.new("Frame")
     Sidebar.Size = UDim2.new(0,135,1,-46)
@@ -724,50 +773,128 @@ local LightingBackup = {
 }
 
 --==================================================
--- FLY
+-- FLY - บินตามทิศทางกล้อง
+-- หันขึ้น = บินขึ้น / หันลง = บินลง
+-- รองรับทั้ง PC + มือถือ
 --==================================================
 local FlyBV, FlyBG
 
 local function StopFly()
-    if FlyBV then FlyBV:Destroy(); FlyBV=nil end
-    if FlyBG then FlyBG:Destroy(); FlyBG=nil end
+    if FlyBV then
+        FlyBV:Destroy()
+        FlyBV = nil
+    end
+
+    if FlyBG then
+        FlyBG:Destroy()
+        FlyBG = nil
+    end
+
     local h = Humanoid()
-    if h then h.PlatformStand = false end
+    if h then
+        h.PlatformStand = false
+    end
 end
 
 local function StartFly()
     StopFly()
+
     local root, hum = Root(), Humanoid()
     if not root or not hum then return end
 
     FlyBV = Instance.new("BodyVelocity")
     FlyBV.Name = "XWACK_FlyVelocity"
-    FlyBV.MaxForce = Vector3.new(9e9,9e9,9e9)
+    FlyBV.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    FlyBV.P = 10000
     FlyBV.Velocity = Vector3.zero
     FlyBV.Parent = root
 
     FlyBG = Instance.new("BodyGyro")
     FlyBG.Name = "XWACK_FlyGyro"
-    FlyBG.P = 9e4
-    FlyBG.MaxTorque = Vector3.new(9e9,9e9,9e9)
+    FlyBG.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    FlyBG.P = 50000
+    FlyBG.D = 1000
     FlyBG.CFrame = root.CFrame
     FlyBG.Parent = root
+
+    hum.PlatformStand = true
 end
 
 Track(RunService.RenderStepped:Connect(function()
-    if State.Fly then
-        local root, hum = Root(), Humanoid()
-        if not root or not hum then return end
-        if not FlyBV or FlyBV.Parent ~= root then StartFly() end
-        if FlyBV and FlyBG then
-            local move = hum.MoveDirection
-            local y = 0
-            if UIS:IsKeyDown(Enum.KeyCode.Space) then y = 1 end
-            if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.C) then y = -1 end
-            FlyBV.Velocity = Vector3.new(move.X*State.FlySpeed,y*State.FlySpeed,move.Z*State.FlySpeed)
-            FlyBG.CFrame = Camera.CFrame
-        end
+    if not State.Fly then
+        return
     end
+
+    local root, hum = Root(), Humanoid()
+    if not root or not hum or not Camera then
+        return
+    end
+
+    if not FlyBV or FlyBV.Parent ~= root or
+       not FlyBG or FlyBG.Parent ~= root then
+        StartFly()
+        return
+    end
+
+    hum.PlatformStand = true
+
+    local move = hum.MoveDirection
+    local speed = State.FlySpeed or 50
+
+    -- ทิศของกล้องแบบ 3D
+    -- LookVector มีแกน Y อยู่ด้วย
+    -- เพราะงั้นหันขึ้น/ลงแล้วบินตามได้
+    local camCF = Camera.CFrame
+    local look = camCF.LookVector
+    local right = camCF.RightVector
+
+    -- ตรวจว่ากำลังเดินไปข้างหน้า/หลัง/ซ้าย/ขวา
+    -- แปลง MoveDirection เป็น local direction ของกล้อง
+    local flatLook = Vector3.new(look.X, 0, look.Z)
+    local flatRight = Vector3.new(right.X, 0, right.Z)
+
+    if flatLook.Magnitude > 0.001 then
+        flatLook = flatLook.Unit
+    end
+
+    if flatRight.Magnitude > 0.001 then
+        flatRight = flatRight.Unit
+    end
+
+    local forwardAmount = 0
+    local rightAmount = 0
+
+    if move.Magnitude > 0.01 then
+        forwardAmount = move:Dot(flatLook)
+        rightAmount = move:Dot(flatRight)
+    end
+
+    -- บินตามมุมกล้องจริง
+    local flyDirection =
+        (look * forwardAmount) +
+        (right * rightAmount)
+
+    -- PC: Space บินขึ้นตรงๆ เพิ่มเติม
+    if UIS:IsKeyDown(Enum.KeyCode.Space) then
+        flyDirection += Vector3.new(0, 1, 0)
+    end
+
+    -- PC: Ctrl / C บินลงตรงๆ เพิ่มเติม
+    if UIS:IsKeyDown(Enum.KeyCode.LeftControl)
+    or UIS:IsKeyDown(Enum.KeyCode.RightControl)
+    or UIS:IsKeyDown(Enum.KeyCode.C) then
+        flyDirection += Vector3.new(0, -1, 0)
+    end
+
+    -- ป้องกันแนวทแยงเร็วเกิน FlySpeed
+    if flyDirection.Magnitude > 1 then
+        flyDirection = flyDirection.Unit
+    end
+
+    FlyBV.Velocity = flyDirection * speed
+
+    -- ตัวละครหันตามกล้อง
+    FlyBG.CFrame = camCF
 end))
 
 --==================================================
