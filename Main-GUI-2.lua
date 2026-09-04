@@ -255,11 +255,11 @@ local function runScript(url, verName)
 end
 
 oldBtn.MouseButton1Click:Connect(function()
-    runScript("https://raw.githubusercontent.com/wackshopr-tech/script-roblox-all/refs/heads/main/Gui-Old.lua", "GUI เวอร์ชั่นเก่า")
+    runScript("https://raw.githubusercontent.com/runluahub-create/script-all/refs/heads/main/Gui-Old.lua", "GUI เวอร์ชั่นเก่า")
 end)
 
 newBtn.MouseButton1Click:Connect(function()
-    runScript("https://raw.githubusercontent.com/wackshopr-tech/script-roblox-all/refs/heads/main/Gui-New.lua", "GUI เวอร์ชั่นใหม่")
+    runScript("https://raw.githubusercontent.com/runluahub-create/script-all/refs/heads/main/Gui-New.lua", "GUI เวอร์ชั่นใหม่")
 end)
 
 pcall(function()
