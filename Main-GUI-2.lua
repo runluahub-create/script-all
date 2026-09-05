@@ -2,153 +2,307 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
-local SetClipboard = setclipboard or toclipboard or print
 
--- ================================================================= --
--- 1. ป้องกันการรันซ้ำ (หากเปิดอยู่แล้วจะไม่สร้างเพิ่ม)
--- ================================================================= --
-if CoreGui:FindFirstChild("X_WACK_STORE_GUI") then
-    -- แจ้งเตือนผู้ใช้ว่าเมนูเปิดอยู่แล้ว
-    local oldGui = CoreGui.X_WACK_STORE_GUI
-    local function MiniNotify(msg)
-        local NotifFrame = Instance.new("Frame", oldGui)
-        NotifFrame.Size = UDim2.new(0, 260, 0, 45)
-        NotifFrame.Position = UDim2.new(0.5, -130, 0.85, 0)
-        NotifFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
-        NotifFrame.BorderSizePixel = 0
-        NotifFrame.ClipsDescendants = true
-        Instance.new("UICorner", NotifFrame).CornerRadius = UDim.new(0, 8)
-        
-        local Stroke = Instance.new("UIStroke", NotifFrame)
-        Stroke.Thickness = 1.5
-        Stroke.Color = Color3.fromRGB(255, 180, 0)
-        
-        local Msg = Instance.new("TextLabel", NotifFrame)
-        Msg.Size = UDim2.new(1, 0, 1, 0)
-        Msg.BackgroundTransparency = 1
-        Msg.Text = msg
-        Msg.TextColor3 = Color3.fromRGB(255, 220, 100)
-        Msg.Font = Enum.Font.GothamBold
-        Msg.TextSize = 12
-        
-        task.delay(2, function()
-            NotifFrame:Destroy()
-        end)
-    end
-    MiniNotify("⚠️ เมนูนี้เปิดใช้งานอยู่แล้ว!")
-    return -- หยุดการรันสคริปต์ทันที
-end
+local GUI_NAME = "RUNLUA_TA_REMAKE"
 
--- ================================================================= --
--- 2. สร้าง ScreenGui หลัก
--- ================================================================= --
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "X_WACK_STORE_GUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = CoreGui
-
--- ฟังก์ชันแจ้งเตือน (Notification)
-local function Notify(titleText, msgText)
-    local NotifFrame = Instance.new("Frame", ScreenGui)
-    NotifFrame.Size = UDim2.new(0, 260, 0, 50)
-    NotifFrame.Position = UDim2.new(0.5, -130, 1, 80)
-    NotifFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 22)
-    NotifFrame.BorderSizePixel = 0
-    NotifFrame.ClipsDescendants = true
-
-    local Corner = Instance.new("UICorner", NotifFrame)
-    Corner.CornerRadius = UDim.new(0, 10)
-    
-    local Stroke = Instance.new("UIStroke", NotifFrame)
-    Stroke.Thickness = 1.5
-    Stroke.Color = Color3.fromRGB(0, 255, 200)
-
-    local Title = Instance.new("TextLabel", NotifFrame)
-    Title.Position = UDim2.new(0, 12, 0, 6)
-    Title.Size = UDim2.new(1, -24, 0, 18)
-    Title.BackgroundTransparency = 1
-    Title.Text = titleText
-    Title.TextColor3 = Color3.fromRGB(0, 255, 200)
-    Title.Font = Enum.Font.GothamBold
-    Title.TextSize = 13
-    Title.TextXAlignment = Enum.TextXAlignment.Left
-
-    local Msg = Instance.new("TextLabel", NotifFrame)
-    Msg.Position = UDim2.new(0, 12, 0, 24)
-    Msg.Size = UDim2.new(1, -24, 0, 18)
-    Msg.BackgroundTransparency = 1
-    Msg.Text = msgText
-    Msg.TextColor3 = Color3.fromRGB(220, 220, 220)
-    Msg.Font = Enum.Font.Gotham
-    Msg.TextSize = 11
-    Msg.TextXAlignment = Enum.TextXAlignment.Left
-
-    TweenService:Create(NotifFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Position = UDim2.new(0.5, -130, 0.85, 0)}):Play()
-    
-    task.delay(3, function()
-        TweenService:Create(NotifFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {Position = UDim2.new(0.5, -130, 1, 80)}):Play()
-        task.wait(0.4)
-        NotifFrame:Destroy()
-    end)
-end
-
-SetClipboard("https://discord.gg/y3SESh44C8")
-Notify("⚡ Luarun", "คัดลอกลิงก์ Discord เข้าคลิปบอร์ดแล้ว!")
-
--- ================================================================= --
--- 3. หน้าต่างหลัก (ปรับขนาดลงเหลือ 380 x 260)
--- ================================================================= --
-local Main = Instance.new("Frame", ScreenGui)
-Main.AnchorPoint = Vector2.new(0.5, 0.5)
-Main.Position = UDim2.fromScale(0.5, 0.5)
-Main.Size = UDim2.fromOffset(380, 260) -- ปรับขนาดให้เล็กลงเรียบหรู
-Main.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
-Main.BorderSizePixel = 0
-Main.ClipsDescendants = false
-
-local MainCorner = Instance.new("UICorner", Main)
-MainCorner.CornerRadius = UDim.new(0, 12)
-
-local Glow = Instance.new("ImageLabel", Main)
-Glow.Name = "Glow"
-Glow.AnchorPoint = Vector2.new(0.5, 0.5)
-Glow.Position = UDim2.fromScale(0.5, 0.5)
-Glow.Size = UDim2.new(1, 30, 1, 30)
-Glow.BackgroundTransparency = 1
-Glow.Image = "rbxassetid://5028857472"
-Glow.ImageColor3 = Color3.fromRGB(0, 180, 255)
-Glow.ImageTransparency = 0.4
-Glow.ZIndex = 0
-
-local UIStroke = Instance.new("UIStroke", Main)
-UIStroke.Thickness = 2
-UIStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-local UIGradient = Instance.new("UIGradient", UIStroke)
-UIGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 128)),
-    ColorSequenceKeypoint.new(0.25, Color3.fromRGB(0, 230, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 128)),
-    ColorSequenceKeypoint.new(0.75, Color3.fromRGB(255, 230, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 128))
-})
-
-task.spawn(function()
-    local rot = 0
-    while task.wait() do
-        rot = (rot + 1.5) % 360
-        UIGradient.Rotation = rot
-        Glow.ImageColor3 = Color3.fromHSV((rot / 360), 0.8, 1)
+pcall(function()
+    if CoreGui:FindFirstChild(GUI_NAME) then
+        CoreGui[GUI_NAME]:Destroy()
     end
 end)
 
--- ระบบ Drag (ลากหน้าต่าง)
-local dragging, dragInput, dragStart, startPos
-Main.InputBegan:Connect(function(input)
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = GUI_NAME
+ScreenGui.ResetOnSpawn = false
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = CoreGui
+
+local function tween(obj, time, props)
+    TweenService:Create(
+        obj,
+        TweenInfo.new(time, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+        props
+    ):Play()
+end
+
+local function Notify(text)
+    local Toast = Instance.new("TextLabel")
+    Toast.Parent = ScreenGui
+    Toast.AnchorPoint = Vector2.new(0.5, 0)
+    Toast.Position = UDim2.new(0.5, 0, 0, -60)
+    Toast.Size = UDim2.fromOffset(300, 42)
+    Toast.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
+    Toast.Text = text
+    Toast.TextColor3 = Color3.fromRGB(20, 20, 20)
+    Toast.Font = Enum.Font.GothamBold
+    Toast.TextSize = 12
+    Toast.BorderSizePixel = 0
+
+    Instance.new("UICorner", Toast).CornerRadius = UDim.new(0, 14)
+
+    local Stroke = Instance.new("UIStroke", Toast)
+    Stroke.Color = Color3.fromRGB(0, 0, 0)
+    Stroke.Transparency = 0.85
+
+    tween(Toast, 0.35, {
+        Position = UDim2.new(0.5, 0, 0, 22)
+    })
+
+    task.delay(2.2, function()
+        tween(Toast, 0.3, {
+            Position = UDim2.new(0.5, 0, 0, -60),
+            TextTransparency = 1,
+            BackgroundTransparency = 1
+        })
+        task.wait(0.35)
+        Toast:Destroy()
+    end)
+end
+
+local Blur = Instance.new("Frame")
+Blur.Parent = ScreenGui
+Blur.Size = UDim2.fromScale(1, 1)
+Blur.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Blur.BackgroundTransparency = 0.35
+Blur.BorderSizePixel = 0
+
+local Main = Instance.new("Frame")
+Main.Parent = ScreenGui
+Main.AnchorPoint = Vector2.new(0.5, 0.5)
+Main.Position = UDim2.fromScale(0.5, 0.5)
+Main.Size = UDim2.fromOffset(0, 0)
+Main.BackgroundColor3 = Color3.fromRGB(245, 246, 250)
+Main.BorderSizePixel = 0
+Main.ClipsDescendants = true
+
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 22)
+
+local Shadow = Instance.new("ImageLabel")
+Shadow.Parent = Main
+Shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+Shadow.Position = UDim2.fromScale(0.5, 0.5)
+Shadow.Size = UDim2.new(1, 70, 1, 70)
+Shadow.BackgroundTransparency = 1
+Shadow.Image = "rbxassetid://5028857472"
+Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+Shadow.ImageTransparency = 0.72
+Shadow.ZIndex = -1
+
+local Top = Instance.new("Frame")
+Top.Parent = Main
+Top.Size = UDim2.new(1, 0, 0, 74)
+Top.BackgroundColor3 = Color3.fromRGB(28, 30, 40)
+Top.BorderSizePixel = 0
+
+local Accent = Instance.new("Frame")
+Accent.Parent = Top
+Accent.Position = UDim2.new(0, 0, 1, -4)
+Accent.Size = UDim2.new(1, 0, 0, 4)
+Accent.BackgroundColor3 = Color3.fromRGB(0, 190, 255)
+Accent.BorderSizePixel = 0
+
+local AccentGradient = Instance.new("UIGradient", Accent)
+AccentGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 200, 255)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(140, 80, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 160))
+})
+
+task.spawn(function()
+    while ScreenGui.Parent do
+        AccentGradient.Offset = Vector2.new(-1, 0)
+        tween(AccentGradient, 2.5, {
+            Offset = Vector2.new(1, 0)
+        })
+        task.wait(2.5)
+    end
+end)
+
+local Logo = Instance.new("TextLabel")
+Logo.Parent = Top
+Logo.Position = UDim2.fromOffset(18, 16)
+Logo.Size = UDim2.fromOffset(44, 44)
+Logo.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Logo.Text = "RL"
+Logo.TextColor3 = Color3.fromRGB(28, 30, 40)
+Logo.Font = Enum.Font.GothamBlack
+Logo.TextSize = 17
+Logo.BorderSizePixel = 0
+
+Instance.new("UICorner", Logo).CornerRadius = UDim.new(0, 13)
+
+local Title = Instance.new("TextLabel")
+Title.Parent = Top
+Title.Position = UDim2.fromOffset(74, 14)
+Title.Size = UDim2.new(1, -125, 0, 24)
+Title.BackgroundTransparency = 1
+Title.Text = "RUNLUA CONTROL"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBlack
+Title.TextSize = 18
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local SubTitle = Instance.new("TextLabel")
+SubTitle.Parent = Top
+SubTitle.Position = UDim2.fromOffset(75, 39)
+SubTitle.Size = UDim2.new(1, -125, 0, 18)
+SubTitle.BackgroundTransparency = 1
+SubTitle.Text = "เลือกเมนูที่ต้องการใช้งาน"
+SubTitle.TextColor3 = Color3.fromRGB(180, 185, 200)
+SubTitle.Font = Enum.Font.GothamMedium
+SubTitle.TextSize = 11
+SubTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local Close = Instance.new("TextButton")
+Close.Parent = Top
+Close.Position = UDim2.new(1, -48, 0, 18)
+Close.Size = UDim2.fromOffset(30, 30)
+Close.BackgroundColor3 = Color3.fromRGB(255, 70, 90)
+Close.Text = "X"
+Close.TextColor3 = Color3.fromRGB(255, 255, 255)
+Close.Font = Enum.Font.GothamBlack
+Close.TextSize = 12
+Close.BorderSizePixel = 0
+Close.AutoButtonColor = false
+
+Instance.new("UICorner", Close).CornerRadius = UDim.new(0, 10)
+
+local Holder = Instance.new("Frame")
+Holder.Parent = Main
+Holder.Position = UDim2.fromOffset(18, 92)
+Holder.Size = UDim2.new(1, -36, 1, -120)
+Holder.BackgroundTransparency = 1
+
+local List = Instance.new("UIListLayout")
+List.Parent = Holder
+List.Padding = UDim.new(0, 12)
+List.SortOrder = Enum.SortOrder.LayoutOrder
+
+local function MakeCard(icon, title, desc, color)
+    local Card = Instance.new("TextButton")
+    Card.Parent = Holder
+    Card.Size = UDim2.new(1, 0, 0, 68)
+    Card.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    Card.Text = ""
+    Card.BorderSizePixel = 0
+    Card.AutoButtonColor = false
+
+    Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 16)
+
+    local Stroke = Instance.new("UIStroke", Card)
+    Stroke.Color = Color3.fromRGB(220, 225, 235)
+    Stroke.Thickness = 1
+
+    local IconBox = Instance.new("TextLabel")
+    IconBox.Parent = Card
+    IconBox.Position = UDim2.fromOffset(12, 12)
+    IconBox.Size = UDim2.fromOffset(44, 44)
+    IconBox.BackgroundColor3 = color
+    IconBox.Text = icon
+    IconBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    IconBox.Font = Enum.Font.GothamBlack
+    IconBox.TextSize = 18
+    IconBox.BorderSizePixel = 0
+
+    Instance.new("UICorner", IconBox).CornerRadius = UDim.new(0, 14)
+
+    local CardTitle = Instance.new("TextLabel")
+    CardTitle.Parent = Card
+    CardTitle.Position = UDim2.fromOffset(68, 13)
+    CardTitle.Size = UDim2.new(1, -95, 0, 22)
+    CardTitle.BackgroundTransparency = 1
+    CardTitle.Text = title
+    CardTitle.TextColor3 = Color3.fromRGB(25, 25, 32)
+    CardTitle.Font = Enum.Font.GothamBold
+    CardTitle.TextSize = 14
+    CardTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+    local CardDesc = Instance.new("TextLabel")
+    CardDesc.Parent = Card
+    CardDesc.Position = UDim2.fromOffset(68, 36)
+    CardDesc.Size = UDim2.new(1, -95, 0, 18)
+    CardDesc.BackgroundTransparency = 1
+    CardDesc.Text = desc
+    CardDesc.TextColor3 = Color3.fromRGB(115, 120, 130)
+    CardDesc.Font = Enum.Font.Gotham
+    CardDesc.TextSize = 10
+    CardDesc.TextXAlignment = Enum.TextXAlignment.Left
+
+    local Arrow = Instance.new("TextLabel")
+    Arrow.Parent = Card
+    Arrow.AnchorPoint = Vector2.new(1, 0.5)
+    Arrow.Position = UDim2.new(1, -16, 0.5, 0)
+    Arrow.Size = UDim2.fromOffset(20, 20)
+    Arrow.BackgroundTransparency = 1
+    Arrow.Text = ">"
+    Arrow.TextColor3 = Color3.fromRGB(120, 120, 130)
+    Arrow.Font = Enum.Font.GothamBlack
+    Arrow.TextSize = 16
+
+    Card.MouseEnter:Connect(function()
+        tween(Card, 0.2, {
+            BackgroundColor3 = Color3.fromRGB(248, 250, 255)
+        })
+        tween(Stroke, 0.2, {
+            Color = color
+        })
+        tween(IconBox, 0.2, {
+            Size = UDim2.fromOffset(48, 48),
+            Position = UDim2.fromOffset(10, 10)
+        })
+    end)
+
+    Card.MouseLeave:Connect(function()
+        tween(Card, 0.2, {
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        })
+        tween(Stroke, 0.2, {
+            Color = Color3.fromRGB(220, 225, 235)
+        })
+        tween(IconBox, 0.2, {
+            Size = UDim2.fromOffset(44, 44),
+            Position = UDim2.fromOffset(12, 12)
+        })
+    end)
+
+    return Card
+end
+
+local OldBtn = MakeCard(
+    "V1",
+    "GUI เวอร์ชั่นคุณภาพ",
+    "ระบบเดิม ปรับใหม่ให้ใช้งานง่ายขึ้น",
+    Color3.fromRGB(255, 130, 45)
+)
+
+local NewBtn = MakeCard(
+    "V2",
+    "GUI เวอร์ชั่นใหม่ Premium",
+    "เมนูใหม่ ลื่นกว่าเดิม และจัดเต็มกว่า",
+    Color3.fromRGB(0, 170, 255)
+)
+
+local Footer = Instance.new("TextLabel")
+Footer.Parent = Main
+Footer.AnchorPoint = Vector2.new(0.5, 1)
+Footer.Position = UDim2.new(0.5, 0, 1, -12)
+Footer.Size = UDim2.new(1, -20, 0, 16)
+Footer.BackgroundTransparency = 1
+Footer.Text = "X-WACK STORE"
+Footer.TextColor3 = Color3.fromRGB(130, 135, 145)
+Footer.Font = Enum.Font.GothamBold
+Footer.TextSize = 10
+
+local dragging = false
+local dragStart
+local startPos
+
+Top.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
         dragStart = input.Position
         startPos = Main.Position
+
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -157,155 +311,64 @@ Main.InputBegan:Connect(function(input)
     end
 end)
 
-Main.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
 UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
         local delta = input.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        Main.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
--- ปุ่มปิด
-local CloseBtn = Instance.new("TextButton", Main)
-CloseBtn.Size = UDim2.fromOffset(24, 24)
-CloseBtn.Position = UDim2.new(1, -32, 0, 10)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(255, 40, 70)
-CloseBtn.Text = "✕"
-CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 12
-CloseBtn.AutoButtonColor = false
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
-
-CloseBtn.MouseButton1Click:Connect(function()
-    TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.fromOffset(0, 0)}):Play()
-    task.wait(0.3)
+local function CloseGui()
+    tween(Main, 0.25, {
+        Size = UDim2.fromOffset(0, 0)
+    })
+    tween(Blur, 0.25, {
+        BackgroundTransparency = 1
+    })
+    task.wait(0.28)
     ScreenGui:Destroy()
-end)
-
--- หัวข้อ และ ข้อความ
-local Title = Instance.new("TextLabel", Main)
-Title.Position = UDim2.fromOffset(0, 16)
-Title.Size = UDim2.new(1, 0, 0, 26)
-Title.BackgroundTransparency = 1
-Title.Text = "RUNLUA HUB"
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBlack
-Title.TextSize = 22
-
-local Subtitle = Instance.new("TextLabel", Main)
-Subtitle.Position = UDim2.fromOffset(0, 42)
-Subtitle.Size = UDim2.new(1, 0, 0, 18)
-Subtitle.BackgroundTransparency = 1
-Subtitle.Text = "✨ ระบบสคริปต์ ภาษาไทยเต็มรูปแบบ ✨"
-Subtitle.TextColor3 = Color3.fromRGB(0, 230, 255)
-Subtitle.Font = Enum.Font.GothamMedium
-Subtitle.TextSize = 11
-
-local Desc = Instance.new("TextLabel", Main)
-Desc.Position = UDim2.fromOffset(0, 62)
-Desc.Size = UDim2.new(1, 0, 0, 18)
-Desc.BackgroundTransparency = 1
-Desc.Text = "กรุณาเลือกเวอร์ชันเมนูที่คุณต้องการใช้งานด้านล่าง"
-Desc.TextColor3 = Color3.fromRGB(160, 160, 175)
-Desc.Font = Enum.Font.Gotham
-Desc.TextSize = 11
-
--- ================================================================= --
--- 4. ปุ่มเลือกเวอร์ชัน (ย่อขนาดให้เข้ากับ UI ใหม่)
--- ================================================================= --
-local function createButton(text, subText, yPos, mainColor)
-    local Btn = Instance.new("TextButton", Main)
-    Btn.Position = UDim2.new(0.5, -165, 0, yPos)
-    Btn.Size = UDim2.new(0, 330, 0, 52)
-    Btn.BackgroundColor3 = Color3.fromRGB(22, 22, 32)
-    Btn.Text = ""
-    Btn.AutoButtonColor = false
-
-    local BtnCorner = Instance.new("UICorner", Btn)
-    BtnCorner.CornerRadius = UDim.new(0, 10)
-
-    local BtnStroke = Instance.new("UIStroke", Btn)
-    BtnStroke.Thickness = 1.5
-    BtnStroke.Color = mainColor
-    BtnStroke.Transparency = 0.3
-
-    local BtnTitle = Instance.new("TextLabel", Btn)
-    BtnTitle.Position = UDim2.new(0, 15, 0, 8)
-    BtnTitle.Size = UDim2.new(1, -30, 0, 18)
-    BtnTitle.BackgroundTransparency = 1
-    BtnTitle.Text = text
-    BtnTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-    BtnTitle.Font = Enum.Font.GothamBold
-    BtnTitle.TextSize = 14
-    BtnTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-    local BtnSub = Instance.new("TextLabel", Btn)
-    BtnSub.Position = UDim2.new(0, 15, 0, 26)
-    BtnSub.Size = UDim2.new(1, -30, 0, 16)
-    BtnSub.BackgroundTransparency = 1
-    BtnSub.Text = subText
-    BtnSub.TextColor3 = Color3.fromRGB(150, 150, 170)
-    BtnSub.Font = Enum.Font.Gotham
-    BtnSub.TextSize = 10
-    BtnSub.TextXAlignment = Enum.TextXAlignment.Left
-
-    Btn.MouseEnter:Connect(function()
-        TweenService:Create(Btn, TweenInfo.new(0.2), {
-            BackgroundColor3 = Color3.fromRGB(32, 32, 48),
-            Size = UDim2.new(0, 336, 0, 54),
-            Position = UDim2.new(0.5, -168, 0, yPos - 1)
-        }):Play()
-        TweenService:Create(BtnStroke, TweenInfo.new(0.2), {Transparency = 0, Color = Color3.fromRGB(255, 255, 255)}):Play()
-        TweenService:Create(BtnTitle, TweenInfo.new(0.2), {TextColor3 = mainColor}):Play()
-    end)
-
-    Btn.MouseLeave:Connect(function()
-        TweenService:Create(Btn, TweenInfo.new(0.2), {
-            BackgroundColor3 = Color3.fromRGB(22, 22, 32),
-            Size = UDim2.new(0, 330, 0, 52),
-            Position = UDim2.new(0.5, -165, 0, yPos)
-        }):Play()
-        TweenService:Create(BtnStroke, TweenInfo.new(0.2), {Transparency = 0.3, Color = mainColor}):Play()
-        TweenService:Create(BtnTitle, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
-    end)
-
-    return Btn
 end
 
-local oldBtn = createButton("🔥 GUI เวอร์ชั่นเก่า (Classic)", "ใช้งานฟังก์ชันดั้งเดิม เสถียรและเรียบง่าย", 92, Color3.fromRGB(255, 140, 0))
-local newBtn = createButton("🚀 GUI เวอร์ชั่นใหม่ (V2 Premium)", "ฟังก์ชันจัดเต็ม อัปเดตใหม่ล่าสุด ลื่นไหลกว่าเดิม", 152, Color3.fromRGB(0, 225, 255))
+Close.MouseButton1Click:Connect(CloseGui)
 
--- Footer ด้านล่าง
-local Footer = Instance.new("TextLabel", Main)
-Footer.Position = UDim2.new(0, 0, 1, -22)
-Footer.Size = UDim2.new(1, 0, 0, 16)
-Footer.BackgroundTransparency = 1
-Footer.Text = "พัฒนาและดูแลระบบโดย : X-WACK STORE"
-Footer.TextColor3 = Color3.fromRGB(100, 100, 120)
-Footer.Font = Enum.Font.GothamMedium
-Footer.TextSize = 10
+local function RunScript(url, name)
+    Notify("กำลังโหลด " .. name)
+    task.wait(0.45)
 
--- ================================================================= --
--- 5. ระบบรันสคริปต์
--- ================================================================= --
-local function runScript(url, verName)
-    Notify("🚀 กำลังโหลด...", "กำลังเปิดใช้งาน " .. verName)
-    TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = UDim2.fromOffset(0, 0)}):Play()
-    task.wait(0.3)
-    ScreenGui:Destroy()
-    loadstring(game:HttpGet(url))()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(url))()
+    end)
+
+    if success then
+        CloseGui()
+    else
+        Notify("โหลดไม่สำเร็จ")
+        warn(err)
+    end
 end
 
-oldBtn.MouseButton1Click:Connect(function()
-    runScript("https://raw.githubusercontent.com/runluahub-create/script-all/refs/heads/main/Gui-Old.lua", "GUI เวอร์ชั่นเก่า")
+OldBtn.MouseButton1Click:Connect(function()
+    RunScript(
+        "https://raw.githubusercontent.com/runluahub-create/script-all/refs/heads/main/Gui-Old.lua",
+        "V1"
+    )
 end)
 
-newBtn.MouseButton1Click:Connect(function()
-    runScript("https://raw.githubusercontent.com/runluahub-create/script-all/refs/heads/main/Gui-New.lua", "GUI เวอร์ชั่นใหม่")
+NewBtn.MouseButton1Click:Connect(function()
+    RunScript(
+        "https://raw.githubusercontent.com/runluahub-create/script-all/refs/heads/main/Gui-New.lua",
+        "V2"
+    )
 end)
+
+task.wait(0.05)
+tween(Main, 0.45, {
+    Size = UDim2.fromOffset(410, 295)
+})
+
+Notify("เปิด RUNLUA CONTROL แล้ว")
