@@ -1619,6 +1619,38 @@ end,"นั่ง VehicleSeat แล้วเปิด ระบบจะบั�
     callback = function(v) State.CarSpeed = v end
 })
 
+ToolTab:NewLabel("หยิบของเร็ว | E")
+
+local InstantPromptEnabled = false
+local OriginalHoldDuration = {}
+
+ToolTab:NewToggle("🥅 หยิบของเร็ว | E", false, function(state)
+    InstantPromptEnabled = state
+
+    if state then
+        -- เปิด: ทำ ProximityPrompt ที่มีอยู่ทั้งหมดให้กดทันที
+        for _, prompt in ipairs(game:GetService("Workspace"):GetDescendants()) do
+            if prompt:IsA("ProximityPrompt") then
+                if OriginalHoldDuration[prompt] == nil then
+                    OriginalHoldDuration[prompt] = prompt.HoldDuration
+                end
+
+                prompt.HoldDuration = 0
+            end
+        end
+    else
+        -- ปิด: คืนค่า HoldDuration เดิม
+        for prompt, oldDuration in pairs(OriginalHoldDuration) do
+            if prompt and prompt.Parent then
+                prompt.HoldDuration = oldDuration
+            end
+        end
+
+        table.clear(OriginalHoldDuration)
+    end
+end, "เปิดแล้วสิ่งที่ต้องกด E หรือกดค้าง จะกดได้ทันที / ปิดแล้วคืนค่าดีเลย์เดิม")
+
+
 ToolTab:NewLabel("เสกของ / Tool Giver")
 ToolTab:NewButton("🔄 สแกนของในแมพ",function()
     local tools=FindTools()
@@ -1683,9 +1715,64 @@ FunTab:NewButton("💥 ชนผู้เล่นกระเด็น",functio
     SafeLoad("https://raw.githubusercontent.com/wackshopr-tech/script-roblox-all/refs/heads/main/SCRIPT-ALL-BY-WACK-SHOP/FLINGCORE/FLINGCORE.lua")
 end,"ต้นฉบับไฟล์นี้ถูกเข้ารหัส/Obfuscate จึงเรียกต้นฉบับโดยตรงเมื่อกด")
 
-FunTab:NewButton("🕺 ท่าชักว่าว",function()
-    SafeLoad("https://pastefy.app/wa3v2Vgm/raw")
-end,"กดเพื่อเรียกสคริปต์ท่าทางพิเศษจากแหล่งเดิมโดยตรง")
+FunTab:NewToggle("👕 ถอดเสื้อผ้า หีนมใหญ่", false, function(v)
+    if v then
+        loadstring(game:HttpGet(
+            "https://raw.githubusercontent.com/clemonlang/clemon_roclothes/refs/heads/main/ClemonRC.lua"
+        ))()
+    end
+end, "เปิด Clemon RoClothes")
+
+FunTab:NewToggle("🤚 ชักว่าว", false, function(v)
+    local Players = game:GetService("Players")
+    local player = Players.LocalPlayer
+
+    if v then
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum then return end
+
+        -- ตรวจว่าเป็น R6 หรือยัง
+        if hum.RigType ~= Enum.HumanoidRigType.R6 then
+            warn("กำลังเปลี่ยนเป็น R6...")
+
+            -- พยายามเปลี่ยน Avatar เป็น R6
+            local desc = hum:GetAppliedDescription()
+
+            local success = pcall(function()
+                player:LoadCharacterWithHumanoidDescription(
+                    desc,
+                    Enum.HumanoidRigType.R6
+                )
+            end)
+
+            if not success then
+                warn("ไม่สามารถเปลี่ยนเป็น R6 จากฝั่ง Client ได้")
+                return
+            end
+
+            -- รอตัวละครใหม่
+            char = player.CharacterAdded:Wait()
+            hum = char:WaitForChild("Humanoid")
+        end
+
+        -- ตอนนี้ต้องเป็น R6 แล้วค่อยเล่น Animation
+        if hum.RigType == Enum.HumanoidRigType.R6 then
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://72042024"
+
+            getgenv().FunTrack = hum:LoadAnimation(anim)
+            getgenv().FunTrack.Looped = true
+            getgenv().FunTrack:Play()
+        end
+
+    else
+        if getgenv().FunTrack then
+            getgenv().FunTrack:Stop()
+            getgenv().FunTrack = nil
+        end
+    end
+end, "เปิด = เช็ก R6 แล้วเล่นว่าว / ปิด = หยุด")
 
 FunTab:NewButton("🧱 เครื่องมือ F3X",function()
     SafeLoad("https://pastebin.com/raw/FZmTykdY")
@@ -1696,6 +1783,10 @@ ToolTab:NewLabel("เครื่องมือคำสั่ง")
 ToolTab:NewButton("⌨️ แป้นพิมพ์บนหน้าจอ",function()
     SafeLoad("https://raw.githubusercontent.com/Xxtan31/Ata/main/deltakeyboardcrack.txt")
 end,"เปิดแป้นพิมพ์เสริมของสคริปต์ต้นฉบับ ฟังก์ชันนี้จำเป็นต้องมีหน้าต่างของตัวเองเพื่อใช้เป็นคีย์บอร์ด")
+
+ToolTab:NewButton("🚀 เข้าเซิร์ฟเวอร์คนน้อย",function()
+    SafeLoad("https://raw.githubusercontent.com/runluahub-create/All-map/refs/heads/main/Low%20Population%20Server%20Finder")
+end,"จะเข้าเซิฟเวอร์ทีีมีคนน้อยใช้งานได้ทุกแมพ")
 
 ToolTab:NewButton("♾️ Infinite Yield",function()
     SafeLoad("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source")
