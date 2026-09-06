@@ -1,3 +1,83 @@
+-- ====================================================================
+-- 🔊 RUNLUA AUTO SOUND SYSTEM (รอบที่ 1 + ทุกๆ 10)
+-- ====================================================================
+local HttpService = game:GetService("HttpService")
+local SOUND_CONFIG_FILE = "RUNLUA_HUB/sound_config.json"
+
+_G.soundSettings = {
+    runCount = 0
+}
+
+-- โหลดค่า runCount
+local function loadSoundConfig()
+    if isfile and readfile and isfile(SOUND_CONFIG_FILE) then
+        local success, data = pcall(function()
+            return HttpService:JSONDecode(readfile(SOUND_CONFIG_FILE))
+        end)
+        if success and data then
+            _G.soundSettings.runCount = data.runCount or 0
+            return true
+        end
+    end
+    return false
+end
+
+loadSoundConfig()
+
+-- เซฟค่า
+local function saveSoundConfig()
+    if writefile then
+        pcall(function()
+            if not isfolder("RUNLUA_HUB") then makefolder("RUNLUA_HUB") end
+            writefile(SOUND_CONFIG_FILE, HttpService:JSONEncode(_G.soundSettings))
+        end)
+    end
+end
+
+-- 🔊 ฟังก์ชันเล่นเสียง
+local function playRunluaSound()
+    _G.soundSettings.runCount = (_G.soundSettings.runCount or 0) + 1
+    local currentRun = _G.soundSettings.runCount
+    
+    -- รอบที่ 1 หรือ รอบที่ทวีคูณ 10 (10, 20, 30, ...)
+    if currentRun ~= 1 and currentRun % 10 ~= 0 then
+        print("[RUNLUA] รอบที่ " .. currentRun .. " เงียบ (รอบต่อไป: " .. (math.floor(currentRun/10)+1)*10 .. ")")
+        saveSoundConfig()
+        return
+    end
+    
+    -- 🎵 มีเสียง!
+    print("[RUNLUA] 🎵 รอบที่ " .. currentRun .. " มีเสียง!")
+    
+    task.spawn(function()
+        pcall(function()
+            local soundUrl = "https://github.com/runluahub-create/script-all/blob/main/RUNLUA_soft.mp3"
+            local soundFileName = "RUNLUA_soft.mp3"
+            
+            -- โหลดไฟล์
+            if writefile and readfile and isfile and not isfile(soundFileName) then
+                writefile(soundFileName, game:HttpGet(soundUrl))
+            end
+            
+            local sound = Instance.new("Sound")
+            if getcustomasset and isfile and isfile(soundFileName) then
+                sound.SoundId = getcustomasset(soundFileName)
+            else
+                sound.SoundId = soundUrl
+            end
+            
+            sound.Volume = 2
+            sound.Parent = workspace
+            sound:Play()
+            task.delay(10, function()
+                if sound then sound:Destroy() end
+            end)
+        end)
+    end)
+    
+    saveSoundConfig()
+end
+
 if not game:IsLoaded() then game.Loaded:Wait() end
 
 local Players = game:GetService("Players")
@@ -3094,6 +3174,9 @@ end,"กดแล้วเปิด Infinite Yield ของเดิมทั�
 ToolTab:NewButton("Quirky CMD",function()
     SafeLoad("https://gist.github.com/someunknowndude/38cecea5be9d75cb743eac8b1eaf6758/raw")
 end,"กดแล้วเปิด Quirky CMD ของเดิมทันที ตามที่กำหนดไว้")
+
+-- 🔊 เล่นเสียงอัตโนมัติ (ครั้งแรก + ทุกๆ 10)
+playRunluaSound()
 
 Notify("RUNLUA-HUB UI โหลดเสร็จแล้ว!")
 print("RUNLUA-HUB UI READY")
