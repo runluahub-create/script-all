@@ -895,84 +895,133 @@ Modules.Slider = (function()
 local UserInputService = game:GetService("UserInputService")
 local Theme = Modules.Theme
 local Utility = Modules.Utility
-local Animation = Modules.Animation
 local Slider = {}
 Slider.__index = Slider
 
 function Slider.new(parent, config)
-	config = config or {}
-	local self = setmetatable({}, Slider)
-	self.Min = config.Min or 0
-	self.Max = config.Max or 100
-	self.Value = Utility.Clamp(config.Default or self.Min, self.Min, self.Max)
-	self.Dragging = false
+    config = config or {}
+    local self = setmetatable({}, Slider)
+    self.Min = tonumber(config.Min) or 0
+    self.Max = tonumber(config.Max) or 100
+    self.Increment = tonumber(config.Increment) or 1
+    self.Value = Utility.Clamp(tonumber(config.Default) or self.Min, self.Min, self.Max)
+    self.Dragging = false
 
-	self.Instance = Utility.New("Frame", {
-		Name = "Slider", BackgroundColor3 = Theme.Get("ElementBackground"),
-		Size = UDim2.new(1, 0, 0, 46), Parent = parent
-	})
-	Utility.New("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.Instance })
-	local stroke = Utility.New("UIStroke", { Color = Theme.Get("Border"), Transparency = 0.75, Thickness = 1, Parent = self.Instance })
-	Utility.New("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingTop = UDim.new(0, 6), Parent = self.Instance })
+    self.Instance = Utility.New("Frame", {
+        Name = "Slider", BackgroundColor3 = Theme.Get("ElementBackground"),
+        Size = UDim2.new(1, 0, 0, 58), Parent = parent
+    })
+    Utility.New("UICorner", { CornerRadius = UDim.new(0, 6), Parent = self.Instance })
+    local stroke = Utility.New("UIStroke", { Color = Theme.Get("Border"), Transparency = 0.75, Thickness = 1, Parent = self.Instance })
+    Utility.New("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingTop = UDim.new(0, 6), Parent = self.Instance })
 
-	local header = Utility.New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 16), Parent = self.Instance })
-	Modules.Icon.New(header, config.Icon or "sliders-horizontal", 15, UDim2.new(0,0,0.5,0), Vector2.new(0,0.5))
-	local titleLbl = Utility.New("TextLabel", { BackgroundTransparency = 1, Position = UDim2.fromOffset(24,0), Size = UDim2.new(1, -74, 1, 0), Text = config.Title or "Slider", Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = Theme.Get("Text"), TextXAlignment = Enum.TextXAlignment.Left, Parent = header })
-	local valLbl = Utility.New("TextLabel", { BackgroundTransparency = 1, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(50, 16), Text = tostring(self.Value), Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = Theme.Get("Accent"), TextXAlignment = Enum.TextXAlignment.Right, Parent = header })
+    local header = Utility.New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 24), Parent = self.Instance })
+    Modules.Icon.New(header, config.Icon or "sliders-horizontal", 15, UDim2.new(0,0,0.5,0), Vector2.new(0,0.5))
+    local titleLbl = Utility.New("TextLabel", { BackgroundTransparency = 1, Position = UDim2.fromOffset(24,0), Size = UDim2.new(1, -112, 1, 0), Text = config.Title or "Slider", Font = Enum.Font.GothamMedium, TextSize = 13, TextColor3 = Theme.Get("Text"), TextXAlignment = Enum.TextXAlignment.Left, Parent = header })
 
-	local bar = Utility.New("Frame", { Position = UDim2.new(0, 0, 0, 26), Size = UDim2.new(1, 0, 0, 5), BackgroundColor3 = Theme.Get("AccentDim"), Parent = self.Instance })
-	Utility.New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = bar })
-	local fill = Utility.New("Frame", { Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Theme.Get("Accent"), Parent = bar })
-	Utility.New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = fill })
+    local inputBox = Utility.New("TextBox", {
+        BackgroundColor3 = Theme.Get("ElementBackground"), AnchorPoint = Vector2.new(1, 0),
+        Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(82, 24),
+        ClearTextOnFocus = false, Text = tostring(self.Value), PlaceholderText = tostring(self.Min).."-"..tostring(self.Max),
+        Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = Theme.Get("Accent"),
+        TextXAlignment = Enum.TextXAlignment.Center, Parent = header
+    })
+    Utility.New("UICorner", { CornerRadius = UDim.new(0, 6), Parent = inputBox })
+    local inputStroke = Utility.New("UIStroke", { Color = Theme.Get("Border"), Transparency = 0.55, Thickness = 1, Parent = inputBox })
 
-	local function update(xPos)
-		local rel = Utility.Clamp((xPos - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-		local raw = self.Min + rel * (self.Max - self.Min)
-		local stepped = Utility.Round(raw / (config.Increment or 1)) * (config.Increment or 1)
-		self.Value = Utility.Clamp(stepped, self.Min, self.Max)
-		valLbl.Text = tostring(self.Value)
-		fill.Size = UDim2.new((self.Value - self.Min)/(self.Max - self.Min), 0, 1, 0)
-		Utility.SafeCall(config.Callback, self.Value)
-	end
+    local bar = Utility.New("Frame", { Position = UDim2.new(0, 7, 0, 39), Size = UDim2.new(1, -14, 0, 6), BackgroundColor3 = Theme.Get("AccentDim"), Parent = self.Instance })
+    Utility.New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = bar })
+    local fill = Utility.New("Frame", { Size = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Theme.Get("Accent"), Parent = bar })
+    Utility.New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = fill })
+    local knob = Utility.New("Frame", {
+        AnchorPoint = Vector2.new(0.5, 0.5), Size = UDim2.fromOffset(16,16),
+        BackgroundColor3 = Theme.Get("Text"), BorderSizePixel = 0, ZIndex = 4, Parent = bar
+    })
+    Utility.New("UICorner", { CornerRadius = UDim.new(1, 0), Parent = knob })
+    local knobStroke = Utility.New("UIStroke", { Color = Theme.Get("Accent"), Transparency = 0.2, Thickness = 1, Parent = knob })
 
-	bar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			self.Dragging = true
-			update(input.Position.X)
-		end
-	end)
-	UserInputService.InputChanged:Connect(function(input)
-		if self.Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			update(input.Position.X)
-		end
-	end)
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then self.Dragging = false end
-	end)
+    local function roundToIncrement(v)
+        if self.Increment <= 0 then return v end
+        return Utility.Round(v / self.Increment) * self.Increment
+    end
 
-	fill.Size = UDim2.new((self.Value - self.Min)/(self.Max - self.Min), 0, 1, 0)
+    local function formatValue(v)
+        if self.Increment >= 1 then return tostring(math.floor(v + 0.5)) end
+        local txt = string.format("%.3f", v)
+        return txt:gsub("0+$", ""):gsub("%.$", "")
+    end
 
-	if config.Flag then
-		Modules.Config.Register(config.Flag, {
-			Get = function() return self.Value end,
-			Set = function(v)
-				self.Value = Utility.Clamp(v, self.Min, self.Max)
-				valLbl.Text = tostring(self.Value)
-				fill.Size = UDim2.new((self.Value - self.Min)/(self.Max - self.Min), 0, 1, 0)
-			end,
-		})
-	end
+    local function render()
+        local range = self.Max - self.Min
+        local alpha = range ~= 0 and ((self.Value - self.Min) / range) or 0
+        alpha = Utility.Clamp(alpha, 0, 1)
+        fill.Size = UDim2.new(alpha, 0, 1, 0)
+        knob.Position = UDim2.new(alpha, 0, 0.5, 0)
+        inputBox.Text = formatValue(self.Value)
+    end
 
-	Theme.OnChanged:Connect(function()
-		self.Instance.BackgroundColor3 = Theme.Get("ElementBackground")
-		stroke.Color = Theme.Get("Border")
-		titleLbl.TextColor3 = Theme.Get("Text")
-		valLbl.TextColor3 = Theme.Get("Accent")
-		bar.BackgroundColor3 = Theme.Get("AccentDim")
-		fill.BackgroundColor3 = Theme.Get("Accent")
-	end)
+    local function setValue(v, fireCallback)
+        v = tonumber(v)
+        if not v then render(); return end
+        self.Value = Utility.Clamp(roundToIncrement(v), self.Min, self.Max)
+        render()
+        if fireCallback ~= false then Utility.SafeCall(config.Callback, self.Value) end
+    end
 
-	return self
+    local function update(xPos)
+        if bar.AbsoluteSize.X <= 0 then return end
+        local rel = Utility.Clamp((xPos - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+        setValue(self.Min + rel * (self.Max - self.Min), true)
+    end
+
+    bar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            self.Dragging = true
+            update(input.Position.X)
+        end
+    end)
+    knob.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            self.Dragging = true
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if self.Dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            update(input.Position.X)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then self.Dragging = false end
+    end)
+    inputBox.FocusLost:Connect(function()
+        setValue(inputBox.Text, true)
+    end)
+
+    render()
+
+    if config.Flag then
+        Modules.Config.Register(config.Flag, {
+            Get = function() return self.Value end,
+            Set = function(v) setValue(v, false) end,
+        })
+    end
+
+    Theme.OnChanged:Connect(function()
+        self.Instance.BackgroundColor3 = Theme.Get("ElementBackground")
+        stroke.Color = Theme.Get("Border")
+        titleLbl.TextColor3 = Theme.Get("Text")
+        inputBox.BackgroundColor3 = Theme.Get("ElementBackground")
+        inputBox.TextColor3 = Theme.Get("Accent")
+        inputStroke.Color = Theme.Get("Border")
+        bar.BackgroundColor3 = Theme.Get("AccentDim")
+        fill.BackgroundColor3 = Theme.Get("Accent")
+        knob.BackgroundColor3 = Theme.Get("Text")
+        knobStroke.Color = Theme.Get("Accent")
+    end)
+
+    self.SetValue = function(_, v) setValue(v, true) end
+    self.GetValue = function() return self.Value end
+    return self
 end
 return Slider
 end)()

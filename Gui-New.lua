@@ -560,14 +560,15 @@ function Library:NewWindow(title)
                 Set(not state)
             end))
 
-            -- หากมี Slider ในระบบ
+            -- หากมี Slider ในระบบ: เส้นลาก + ปุ่มลาก + ช่องกรอกตัวเลข
             if sliderConfig then
                 local minValue = tonumber(sliderConfig.min) or 0
                 local maxValue = tonumber(sliderConfig.max) or 100
+                local increment = tonumber(sliderConfig.increment) or 1
                 local value = math.clamp(tonumber(sliderConfig.default) or minValue, minValue, maxValue)
 
                 local SHolder = Instance.new("Frame")
-                SHolder.Size = UDim2.new(1, 0, 0, 48)
+                SHolder.Size = UDim2.new(1, 0, 0, 62)
                 SHolder.BackgroundColor3 = Color3.fromRGB(18, 20, 29)
                 SHolder.BorderSizePixel = 0
                 SHolder.LayoutOrder = 2
@@ -577,8 +578,8 @@ function Library:NewWindow(title)
                 Stroke(SHolder, Color3.fromRGB(0,180,255), 0.9)
 
                 local SL = Instance.new("TextLabel")
-                SL.Size = UDim2.new(1, -60, 0, 22)
-                SL.Position = UDim2.fromOffset(10, 2)
+                SL.Size = UDim2.new(1, -92, 0, 24)
+                SL.Position = UDim2.fromOffset(10, 3)
                 SL.BackgroundTransparency = 1
                 SL.Text = sliderConfig.text or "ปรับค่า"
                 SL.TextColor3 = Color3.fromRGB(180, 190, 210)
@@ -587,22 +588,28 @@ function Library:NewWindow(title)
                 SL.TextXAlignment = Enum.TextXAlignment.Left
                 SL.Parent = SHolder
 
-                local SV = Instance.new("TextLabel")
-                SV.Size = UDim2.fromOffset(50, 22)
-                SV.Position = UDim2.new(1, -55, 0, 2)
-                SV.BackgroundTransparency = 1
-                SV.Text = tostring(math.floor(value * 100) / 100)
-                SV.TextColor3 = Color3.fromRGB(0, 210, 255)
-                SV.Font = Enum.Font.GothamBold
-                SV.TextSize = 11
-                SV.TextXAlignment = Enum.TextXAlignment.Right
-                SV.Parent = SHolder
+                local InputBox = Instance.new("TextBox")
+                InputBox.Size = UDim2.fromOffset(72, 24)
+                InputBox.Position = UDim2.new(1, -82, 0, 3)
+                InputBox.BackgroundColor3 = Color3.fromRGB(28, 31, 43)
+                InputBox.BorderSizePixel = 0
+                InputBox.ClearTextOnFocus = false
+                InputBox.Text = tostring(value)
+                InputBox.PlaceholderText = tostring(minValue).."-"..tostring(maxValue)
+                InputBox.TextColor3 = Color3.fromRGB(0, 210, 255)
+                InputBox.PlaceholderColor3 = Color3.fromRGB(105, 115, 135)
+                InputBox.Font = Enum.Font.GothamBold
+                InputBox.TextSize = 11
+                InputBox.Parent = SHolder
+                Corner(InputBox, 6)
+                Stroke(InputBox, Color3.fromRGB(0,180,255), 0.82)
 
                 local SBar = Instance.new("Frame")
-                SBar.Size = UDim2.new(1, -20, 0, 6)
-                SBar.Position = UDim2.new(0, 10, 1, -14)
+                SBar.Size = UDim2.new(1, -32, 0, 6)
+                SBar.Position = UDim2.new(0, 16, 1, -18)
                 SBar.BackgroundColor3 = Color3.fromRGB(45, 50, 65)
                 SBar.BorderSizePixel = 0
+                SBar.Active = true
                 SBar.Parent = SHolder
                 Corner(SBar, 3)
 
@@ -612,29 +619,69 @@ function Library:NewWindow(title)
                 SFill.Parent = SBar
                 Corner(SFill, 3)
 
+                local Knob = Instance.new("Frame")
+                Knob.AnchorPoint = Vector2.new(0.5, 0.5)
+                Knob.Size = UDim2.fromOffset(16, 16)
+                Knob.BackgroundColor3 = Color3.fromRGB(235, 245, 255)
+                Knob.BorderSizePixel = 0
+                Knob.ZIndex = 3
+                Knob.Parent = SBar
+                Corner(Knob, 8)
+                Stroke(Knob, Color3.fromRGB(0,180,255), 0.25)
+
                 local dragging = false
 
-                local function SRender()
-                    local alpha = (value - minValue) / (maxValue - minValue)
-                    SFill.Size = UDim2.new(alpha, 0, 1, 0)
-                    SV.Text = tostring(math.floor(value * 100) / 100)
+                local function RoundToIncrement(v)
+                    if increment <= 0 then return v end
+                    return math.floor((v / increment) + 0.5) * increment
                 end
 
-                local function SetFromX(x)
-                    local alpha = math.clamp((x - SBar.AbsolutePosition.X) / SBar.AbsoluteSize.X, 0, 1)
-                    value = minValue + (maxValue - minValue) * alpha
-                    value = math.floor(value + 0.5)
+                local function FormatValue(v)
+                    if increment >= 1 then return tostring(math.floor(v + 0.5)) end
+                    local txt = string.format("%.3f", v)
+                    txt = txt:gsub("0+$", ""):gsub("%.$", "")
+                    return txt
+                end
+
+                local function SRender()
+                    local range = maxValue - minValue
+                    local alpha = range ~= 0 and ((value - minValue) / range) or 0
+                    alpha = math.clamp(alpha, 0, 1)
+                    SFill.Size = UDim2.new(alpha, 0, 1, 0)
+                    Knob.Position = UDim2.new(alpha, 0, 0.5, 0)
+                    InputBox.Text = FormatValue(value)
+                end
+
+                local function ApplyValue(newValue, fireCallback)
+                    newValue = tonumber(newValue)
+                    if not newValue then
+                        SRender()
+                        return
+                    end
+                    value = math.clamp(RoundToIncrement(newValue), minValue, maxValue)
                     SRender()
-                    if sliderConfig.callback then
+                    if fireCallback ~= false and sliderConfig.callback then
                         local ok, err = pcall(sliderConfig.callback, value)
                         if not ok then warn("[RUNLUA Slider] "..tostring(err)) end
                     end
+                end
+
+                local function SetFromX(x)
+                    if SBar.AbsoluteSize.X <= 0 then return end
+                    local alpha = math.clamp((x - SBar.AbsolutePosition.X) / SBar.AbsoluteSize.X, 0, 1)
+                    ApplyValue(minValue + (maxValue - minValue) * alpha, true)
                 end
 
                 Track(SBar.InputBegan:Connect(function(input)
                     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                         dragging = true
                         SetFromX(input.Position.X)
+                    end
+                end))
+
+                Track(Knob.InputBegan:Connect(function(input)
+                    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                        dragging = true
                     end
                 end))
 
@@ -650,8 +697,12 @@ function Library:NewWindow(title)
                     end
                 end))
 
+                Track(InputBox.FocusLost:Connect(function()
+                    ApplyValue(InputBox.Text, true)
+                end))
+
                 SRender()
-                SliderObj = {Holder = SHolder}
+                SliderObj = {Holder = SHolder, SetValue = ApplyValue, GetValue = function() return value end}
                 UpdateContainerSize()
             end
 
